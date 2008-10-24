@@ -1,0 +1,31 @@
+GitHub's Gem Evaler
+-------------------
+
+Help make GitHub's gem build process more secure and robust!
+
+There are two components associated with this:
+
+* gem_builder.rb - Script that builds the gem
+* gem_eval.rb - Sandboxed Sinatra app that evals ruby gemspecs
+
+
+gem_builder.rb works as follows:
+
+1) process() is called with a repository object and the path to the gemspec
+2) If the spec is not in YAML, a request is made to the gem evaler (see below how it works)
+3) A Gem::Specification object is created from the YAML gemspec and renamed with the user's login
+4) The gem is built from the Gem::Specification using a monkey-patched version of RubyGems,
+   so instead of grabbing the files from the filesystem, they're grabbed from the git repo
+
+gem_eval.rb works as follows:
+
+1) Receives a request with the repo location and the ruby gemspec
+2) Makes a shallow clone of the repo and chdir's to that repo
+3) Evals the spec in a separate thread with a higher $SAFE level
+4) Converts spec to YAML
+
+
+Goals
+-----
+* Lower the $SAFE level to allow methods like Dir.glob, but without compromising security.
+* Never get another email from someone wondering why their gem didn't build
