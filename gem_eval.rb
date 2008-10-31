@@ -23,10 +23,9 @@ post '/' do
           data   = params[:data]
 
           tmpdir = "tmp/#{repo}"
-          tmpdir = "."
           spec   = nil
 
-          #`git clone --depth 1 git://github.com/#{repo} #{tmpdir}`
+          `git clone --depth 1 git://github.com/#{repo} #{tmpdir}`
           Dir.chdir(tmpdir) do
             Thread.new do
               spec = eval <<-EOE
@@ -53,10 +52,10 @@ post '/' do
             spec.rubygems_version = Gem::RubyGemsVersion # make sure validation passes
             spec.validate
           end
-          #`rm -rf #{tmpdir}`
+          `rm -rf #{tmpdir}`
           w.write YAML.dump(spec)
         rescue Object => e
-          #`rm -rf #{tmpdir}`
+          `rm -rf #{tmpdir}`
           puts e
           puts e.backtrace
           w.write "ERROR: #{e}"

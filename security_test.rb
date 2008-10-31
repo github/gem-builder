@@ -46,8 +46,8 @@ Thread.new do
   $SAFE = 3
   Dir.set_safe_level
   assert_raises SecurityError, "snuck tainted string past glob" do
-    p Dir['**','**']
-    p Dir.glob(['**', '**'])
+    Dir['**','**']
+    Dir.glob(['**', '**'])
   end
 end.join
 Dir.set_safe_level

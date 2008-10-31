@@ -16,8 +16,6 @@ Kernel.freeze
 # disable ObjectSpace
 Object.send :remove_const, :ObjectSpace
 
-
-#TODO: use gsub to run any code you want
 # make sure all string methods which modify self also taint the string
 class String
   %w(swapcase! strip! squeeze! reverse! downcase! upcase! delete! slice! replace []= <<).each do |method_name|
