@@ -34,12 +34,26 @@ data = 'echo YOU SHOULDNT SEE THIS!!!!'
  'Kernel.send(:`,data)',
  'trap(1,lambda{})',
  'fork{}',
- 'callcc',
+ 'callcc{}',
  'binding'
 ].each do |danger|
   assert_raises SecurityError, "#{danger} worked!" do
     eval danger
   end
 end
+
+Thread.new do
+  $SAFE = 3
+  Dir.set_safe_level
+  assert_raises SecurityError, "snuck tainted string past glob" do
+    p Dir['**','**']
+    p Dir.glob(['**', '**'])
+  end
+end.join
+Dir.set_safe_level
+Dir['**'.taint]
+
+dirs = Dir['/**']
+assert(4 == (dirs & %w(/usr /bin /home /sbin)).size, 'glob doesnt work')
 
 puts

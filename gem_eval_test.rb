@@ -2,9 +2,14 @@ require 'test/unit'
 require 'net/http'
 require 'cgi'
 
+OUTPUT = !!ENV['SERVER_OUTPUT']
+if ! OUTPUT
+  puts "gem_eval server output disabled, set SERVER_OUTPUT=1 to enable"
+end
+
 class GemEvalTest < Test::Unit::TestCase
   def setup
-    @pid = fork { exec("ruby gem_eval.rb") }
+    @pid = fork { exec("ruby gem_eval.rb #{' > /dev/null 2>&1' unless OUTPUT}") }
     sleep 0.5
   end
 
@@ -105,7 +110,86 @@ test_files: []
     assert_equal expected_response.strip, req(gemspec).strip
   end
 
-  def TODO_test_glob_works
+  def test_gemspec_with_glob_works
+    system("mkdir globdir && cd globdir && touch a.rb b.rb c.txt")
+    gemspec = <<-EOS
+      Gem::Specification.new do |s|
+        s.name = "name"
+        s.description = 'description'
+        s.version = "0.0.9"
+        s.summary = ""
+        s.authors = ["coderrr"]
+        s.files = Dir.glob("globdir/**.rb")
+        s.test_files = Dir["globdir/**"]
+        # make sure array globs work with .glob and make sure glob flags work
+        s.executables = Dir.glob(["globdir/*.TXT", "globdir/*.RB"], File::FNM_CASEFOLD)
+        # make sure array globs work with [] and make sure we cant access files in parent dirs
+        s.extra_rdoc_files = Dir["/etc/*", "globdir"]
+      end
+    EOS
+    expected_response = <<-EOS
+--- !ruby/object:Gem::Specification 
+name: name
+version: !ruby/object:Gem::Version 
+  version: 0.0.9
+platform: ruby
+authors: 
+- coderrr
+autorequire: 
+bindir: bin
+cert_chain: []
+
+date: 2008-10-31 00:00:00 +07:00
+default_executable: 
+dependencies: []
+
+description: description
+email: 
+executables: 
+- globdir/c.txt
+- globdir/b.rb
+- globdir/a.rb
+extensions: []
+
+extra_rdoc_files: 
+- globdir
+files: 
+- globdir/b.rb
+- globdir/a.rb
+has_rdoc: false
+homepage: 
+post_install_message: 
+rdoc_options: []
+
+require_paths: 
+- lib
+required_ruby_version: !ruby/object:Gem::Requirement 
+  requirements: 
+  - - ">="
+    - !ruby/object:Gem::Version 
+      version: "0"
+  version: 
+required_rubygems_version: !ruby/object:Gem::Requirement 
+  requirements: 
+  - - ">="
+    - !ruby/object:Gem::Version 
+      version: "0"
+  version: 
+requirements: []
+
+rubyforge_project: 
+rubygems_version: 1.3.0
+signing_key: 
+specification_version: 2
+summary: ""
+test_files: 
+- globdir/b.rb
+- globdir/a.rb
+- globdir/c.txt
+    EOS
+    assert_equal expected_response.strip, req(gemspec).strip
+  ensure
+    system("rm -rf globdir")
   end
 
   private
