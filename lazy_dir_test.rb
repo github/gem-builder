@@ -45,4 +45,10 @@ class LazyDirTest < Test::Unit::TestCase
     lazy = LazyDir['../**/*.rb'].to_a.map {|f| File.expand_path(f) }
     assert_equal orig, lazy
   end
+
+  def test_call_original_dir_methods
+    assert Dir.pwd
+    assert Dir.mkdir('asfasdfsaf')
+    assert Dir.rmdir('asfasdfsaf')
+  end
 end

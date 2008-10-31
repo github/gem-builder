@@ -29,6 +29,10 @@ class LazyDir < Array
     define_method :[] do |*a|
       LazyDir.new :[], a
     end
+
+    def method_missing m, *a, &b
+      OrigDir.send m, *a, &b
+    end
   end
 end
 

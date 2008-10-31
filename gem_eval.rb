@@ -23,8 +23,11 @@ post '/' do
           data   = params[:data]
 
           tmpdir = "tmp/#{repo}"
+          # DEBUG REMOVE
+          #tmpdir = "."
           spec   = nil
 
+          # DEBUG
           `git clone --depth 1 git://github.com/#{repo} #{tmpdir}`
           Dir.chdir(tmpdir) do
             Thread.new do
@@ -52,9 +55,11 @@ post '/' do
             spec.rubygems_version = Gem::RubyGemsVersion # make sure validation passes
             spec.validate
           end
+          # DEBUG
           `rm -rf #{tmpdir}`
           w.write YAML.dump(spec)
         rescue Object => e
+          # DEBUG
           `rm -rf #{tmpdir}`
           puts e
           puts e.backtrace

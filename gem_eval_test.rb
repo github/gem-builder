@@ -24,7 +24,7 @@ class GemEvalTest < Test::Unit::TestCase
   end
 
   def test_timeout
-    puts "testing timeout..."
+    puts "\ntesting timeout..."
     begin
       timeout(7) do
         s = req <<-EOS
