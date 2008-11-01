@@ -11,24 +11,20 @@ post '/' do
 
   pid = nil
   begin
+    repo   = params[:repo]
+    data   = params[:data]
+    tmpdir = "tmp/#{repo}"
+    spec = nil
+
     Timeout::timeout(3) do
+      `git clone --depth 1 git://github.com/#{repo} #{tmpdir}`
+
       pid = fork do
-        r.close
-
-        require File.dirname(__FILE__)+'/security'
-        require File.dirname(__FILE__)+'/lazy_dir'
-
         begin
-          repo   = params[:repo]
-          data   = params[:data]
+          r.close
 
-          tmpdir = "tmp/#{repo}"
-          # DEBUG REMOVE
-          #tmpdir = "."
-          spec   = nil
-
-          # DEBUG
-          `git clone --depth 1 git://github.com/#{repo} #{tmpdir}`
+          require File.dirname(__FILE__)+'/security'
+          require File.dirname(__FILE__)+'/lazy_dir'
           Dir.chdir(tmpdir) do
             Thread.new do
               spec = eval <<-EOE
@@ -42,6 +38,7 @@ post '/' do
                   params = data = spec = repo = nil
                   $SAFE = 3
                   OrigDir.set_safe_level
+
                   #{data}
                 ensure
                   Object.class_eval do
@@ -52,18 +49,16 @@ post '/' do
               EOE
             end.join
             Dir.set_safe_level
+
             spec.rubygems_version = Gem::RubyGemsVersion # make sure validation passes
             spec.validate
           end
-          # DEBUG
-          `rm -rf #{tmpdir}`
+
           w.write YAML.dump(spec)
-        rescue Object => e
-          # DEBUG
-          `rm -rf #{tmpdir}`
-          puts e
-          puts e.backtrace
-          w.write "ERROR: #{e}"
+        rescue Object
+          puts $!,$@
+
+          w.write "ERROR: #$!"
         end
       end
       w.close
@@ -71,10 +66,12 @@ post '/' do
       Process.wait pid
       r.read
     end
-  rescue Timeout::Error
+  rescue Exception
     Process.kill 9, pid
     puts $!,$@
-    "ERROR: #{$!}"
-  end
 
+    "ERROR: #$!"
+  ensure
+    `rm -rf #{tmpdir}`  if tmpdir
+  end
 end

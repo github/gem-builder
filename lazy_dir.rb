@@ -5,8 +5,9 @@ class LazyDir < Array
     @method, @args, @block = method, args, block
   end
 
+  # this method is meant to be called lazily after the $SAFE has reverted to 0
   def to_a
-    raise SecurityError  unless [:[], :glob].include? @method
+    raise SecurityError  unless %w([] glob).include? @method
     files = OrigDir.send(@method, *@args, &@block)
 
     # only return files within the current directory
@@ -22,12 +23,11 @@ class LazyDir < Array
   end
 
   class << self
-    define_method :glob do |*a|
-      LazyDir.new :glob, a
-    end
-
-    define_method :[] do |*a|
-      LazyDir.new :[], a
+    # these methods are meant to be called with tainted data in a $SAFE >= 3
+    %w(glob []).each do |method_name|
+      define_method method_name do |*a|
+        LazyDir.new method_name, a
+      end
     end
 
     def method_missing m, *a, &b

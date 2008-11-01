@@ -32,7 +32,7 @@ class String
   %w(sub! gsub!).each do |method_name|
     m = instance_method(method_name)
  
-    define_method "__call__#{method_name}" do |b, *a|
+    define_method "__real__#{method_name}" do |b, *a|
       begin
         m.bind(self).call(*a, &b)
       ensure
@@ -42,7 +42,7 @@ class String
  
     eval <<-EOF
       def #{method_name} *a, &b
-        __call__#{method_name}(b, *a)
+        __real__#{method_name}(b, *a)
       end
     EOF
   end
@@ -51,28 +51,24 @@ end
 
 # Bug in ruby doesn't check taint when an array of globs is passed
 class << Dir
-  # we need to track $SAFE level manually because define_method captures the $SAFE  level
-  # of the current scope
+  # we need to track $SAFE level manually because define_method captures the $SAFE level
+  # of the current scope, as it would a local varaible, and of course the current scope has a $SAFE of 0
   @@safe_level = 0
 
+  # since this method is defined with def instead of define_method, $SAFE will be taken from
+  # the calling scope which is what we want
   def set_safe_level
     @@safe_level = $SAFE
   end
 
-  m1 = instance_method :[]
-  define_method :[] do |*args|
-    $SAFE = @@safe_level
-    raise SecurityError  if $SAFE >= 3 and args.any? {|a| a.tainted? }
+  %w([] glob).each do |method_name|
+    m = instance_method method_name
+    define_method method_name do |*args|
+      $SAFE = @@safe_level
+      raise SecurityError  if $SAFE >= 3 and args.flatten.any? {|a| a.tainted? }
 
-    m1.bind(self).call(*args)
-  end
-
-  m2 = instance_method :glob
-  define_method :glob do |*args|
-    $SAFE = @@safe_level
-    raise SecurityError  if $SAFE >= 3 and [*args.first].any? {|a| a.tainted? }
-
-    m2.bind(self).call(*args)
+      m.bind(self).call(*args)
+    end
   end
 end
 

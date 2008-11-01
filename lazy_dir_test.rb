@@ -2,7 +2,6 @@ require 'test/unit'
 require 'fileutils'
 require File.dirname(__FILE__) + '/lazy_dir'
 
-#Dir
 class LazyDirTest < Test::Unit::TestCase
   def setup
     FileUtils.mkdir('test_glob_dir')
@@ -26,7 +25,18 @@ class LazyDirTest < Test::Unit::TestCase
   end
 
   def test_lazy_glob
-    lazy = Thread.new { $SAFE=4; Dir['test_glob_dir/*'] }.value 
+    assert_raises(SecurityError) do
+      Thread.new do
+        $SAFE=4
+        OrigDir['test_glob_dir/*']
+      end.join
+    end
+
+    lazy = Thread.new do
+      $SAFE=4
+      Dir['test_glob_dir/*']
+    end.value
+
     assert_equal OrigDir['test_glob_dir/*'], lazy.to_a
     assert_equal OrigDir['test_glob_dir/*'], lazy.to_ary
   end
@@ -48,7 +58,10 @@ class LazyDirTest < Test::Unit::TestCase
 
   def test_call_original_dir_methods
     assert Dir.pwd
-    assert Dir.mkdir('asfasdfsaf')
-    assert Dir.rmdir('asfasdfsaf')
+    dir = 'asfasdfsaf' 
+    assert Dir.mkdir(dir)
+    assert File.exist?(dir)
+    assert Dir.rmdir(dir)
+    assert ! File.exist?(dir)
   end
 end

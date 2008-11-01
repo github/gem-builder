@@ -9,12 +9,14 @@ end
 
 class GemEvalTest < Test::Unit::TestCase
   def setup
-    @pid = fork { exec("ruby gem_eval.rb #{' > /dev/null 2>&1' unless OUTPUT}") }
+    system("mv git_mock git")
+    @pid = fork { exec("PATH=.:$PATH ruby gem_eval.rb #{' > /dev/null 2>&1' unless OUTPUT}") }
     sleep 0.5
   end
 
-  def teardown
-    Process.kill 9, @pid
+  def teardown 
+    system("pkill -f 'ruby gem_eval.rb'")
+    system("mv git git_mock")
   end
 
   def test_access_to_untainted_locals
@@ -50,7 +52,7 @@ class GemEvalTest < Test::Unit::TestCase
         s.version = "0.0.9"
         s.summary = ""
         s.authors = ["coderrr"]
-        s.files = [ "x" ]
+        s.files = ['x']
       end
     EOS
     expected_response = <<-EOS
@@ -107,7 +109,7 @@ specification_version: 2
 summary: ""
 test_files: []
     EOS
-    assert_equal expected_response.strip, req(gemspec).strip
+    assert_equal clean_yaml(expected_response), clean_yaml(req(gemspec))
   end
 
   def test_gemspec_with_glob_works
@@ -187,20 +189,31 @@ test_files:
 - globdir/a.rb
 - globdir/c.txt
     EOS
-    assert_equal expected_response.strip, req(gemspec).strip
+    assert_equal clean_yaml(expected_response), clean_yaml(req(gemspec))
   ensure
     system("rm -rf globdir")
   end
 
+  def test_tmpdir_is_destroyed
+    Dir.mkdir('tmp/gem_eval_test')
+    assert File.exist?('tmp/gem_eval_test')
+    req('')
+    assert ! File.exist?('tmp/gem_eval_test')
+  end
+
   private
 
+  def clean_yaml(y)
+    y.strip.sub(/^date:.+$/,'').sub(/^rubygems_version:.+$/,'')
+  end
+  
   def assert_nil_error(v)
     assert req("#{v}.abc").include?("undefined method `abc' for nil"), "#{v} was not nil"
   end
 
   def req(data)
     Net::HTTP.start 'localhost', 4567 do |h|
-      h.post('/', "data=#{CGI.escape data}").body 
+      h.post('/', "data=#{CGI.escape data}&repo=gem_eval_test").body 
     end
   end
 end
