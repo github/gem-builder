@@ -35,7 +35,7 @@ post '/' do
                     remove_const :Dir
                     Dir = LazyDir
                   end
-                  params = data = spec = repo = nil
+                  params = tmpdir = data = spec = repo = nil
                   $SAFE = 3
                   OrigDir.set_safe_level
 
