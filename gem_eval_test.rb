@@ -3,9 +3,7 @@ require 'net/http'
 require 'cgi'
 
 OUTPUT = !!ENV['SERVER_OUTPUT']
-if ! OUTPUT
-  puts "gem_eval server output disabled, set SERVER_OUTPUT=1 to enable"
-end
+puts "gem_eval server output disabled, set SERVER_OUTPUT=1 to enable"  if ! OUTPUT
 
 class GemEvalTest < Test::Unit::TestCase
   def setup
@@ -13,12 +11,14 @@ class GemEvalTest < Test::Unit::TestCase
     @pid = fork { exec("PATH=.:$PATH ruby gem_eval.rb #{' > /dev/null 2>&1' unless OUTPUT}") }
 
     # wait for server to start
-    Timeout::timeout(3) do
+    Timeout::timeout(5) do
       begin
-        TCPSocket.open('localhost', 4567){}
+        TCPSocket.open('localhost', 4567) {}
         server_started = true
       rescue Errno::ECONNREFUSED
         server_started = false
+        sleep 0.1
+        retry
       end  until server_started
     end
   end
