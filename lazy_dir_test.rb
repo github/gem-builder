@@ -51,12 +51,12 @@ class LazyDirTest < Test::Unit::TestCase
     assert LazyDir['../../*'].to_a.empty?
 
     puts "\nbig glob test... this may take a while"
-    orig = OrigDir['*.rb'].map {|f| File.expand_path(f) }
-    lazy = LazyDir['../**/*.rb'].to_a.map {|f| File.expand_path(f) }
+    orig = OrigDir['./**/*'].map {|f| File.expand_path(f) }
+    lazy = LazyDir['../**/*'].to_a.map {|f| File.expand_path(f) }
     assert_equal orig, lazy
   end
 
-  def test_call_original_dir_methods
+  def test_lazy_dir_delegates_original_dir_methods
     assert Dir.pwd
     dir = 'asfasdfsaf' 
     assert Dir.mkdir(dir)

@@ -11,7 +11,16 @@ class GemEvalTest < Test::Unit::TestCase
   def setup
     system("mv git_mock git")
     @pid = fork { exec("PATH=.:$PATH ruby gem_eval.rb #{' > /dev/null 2>&1' unless OUTPUT}") }
-    sleep 0.5
+
+    # wait for server to start
+    Timeout::timeout(3) do
+      begin
+        TCPSocket.open('localhost', 4567){}
+        server_started = true
+      rescue Errno::ECONNREFUSED
+        server_started = false
+      end  until server_started
+    end
   end
 
   def teardown 

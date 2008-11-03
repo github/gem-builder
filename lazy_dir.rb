@@ -11,7 +11,7 @@ class LazyDir < Array
     files = OrigDir.send(@method, *@args, &@block)
 
     # only return files within the current directory
-    cur_dir = File.expand_path('.')
+    cur_dir = File.expand_path('.') + File::SEPARATOR
     files.reject do |f|
       File.expand_path(f) !~ %r{^#{cur_dir}}
     end
