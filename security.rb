@@ -13,9 +13,6 @@
 end
 Kernel.freeze
 
-# disable ObjectSpace
-Object.send :remove_const, :ObjectSpace
-
 # make sure all string methods which modify self also taint the string
 class String
   %w(swapcase! strip! squeeze! reverse! downcase! upcase! delete! slice! replace []= <<).each do |method_name|
@@ -49,6 +46,7 @@ class String
 end
 
 
+
 # Bug in ruby doesn't check taint when an array of globs is passed
 class << Dir
   # we need to track $SAFE level manually because define_method captures the $SAFE level
@@ -72,8 +70,14 @@ class << Dir
   end
 end
 
+# freeze String so that the taint method can't be redefined
+String.freeze
+
 # freeze Dir so that no one can modify the @@safe_level
 Dir.freeze
 
 # freeze method classes so someone cant modify them to catch the original methods
 [Method, UnboundMethod].each {|klass| klass.freeze }
+
+# disable ObjectSpace so people cant access the original method objects
+Object.send :remove_const, :ObjectSpace
