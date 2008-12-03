@@ -150,7 +150,7 @@ autorequire:
 bindir: bin
 cert_chain: []
 
-date: 2008-10-31 00:00:00 +07:00
+
 default_executable: 
 dependencies: []
 
@@ -158,15 +158,15 @@ description: description
 email: 
 executables: 
 - globdir/c.txt
-- globdir/b.rb
 - globdir/a.rb
+- globdir/b.rb
 extensions: []
 
 extra_rdoc_files: 
 - globdir
 files: 
-- globdir/b.rb
 - globdir/a.rb
+- globdir/b.rb
 has_rdoc: false
 homepage: 
 post_install_message: 
@@ -189,13 +189,13 @@ required_rubygems_version: !ruby/object:Gem::Requirement
 requirements: []
 
 rubyforge_project: 
-rubygems_version: 1.3.0
+
 signing_key: 
 specification_version: 2
 summary: ""
 test_files: 
-- globdir/b.rb
 - globdir/a.rb
+- globdir/b.rb
 - globdir/c.txt
     EOS
     assert_equal clean_yaml(expected_response), clean_yaml(req(gemspec))
