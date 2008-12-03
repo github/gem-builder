@@ -210,6 +210,20 @@ test_files:
     assert ! File.exist?('tmp/gem_eval_test')
   end
 
+  def test_secure_parser_begin
+    resp = req <<-EOS
+      BEGIN {require 'bogus_file'}
+    EOS
+    assert resp.include?('Insecure operation')
+  end
+
+  def test_secure_parser_end
+    resp = req <<-EOS
+      END {fail 'secret exit'}
+    EOS
+    assert !resp.include?('secret exit')
+  end
+
   private
 
   def clean_yaml(y)
