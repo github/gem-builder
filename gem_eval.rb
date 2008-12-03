@@ -26,30 +26,34 @@ post '/' do
           require File.dirname(__FILE__)+'/security'
           require File.dirname(__FILE__)+'/lazy_dir'
           Dir.chdir(tmpdir) do
-            Thread.new do
-              spec = eval <<-EOE
-                begin
+            thread = Thread.new do
+              eval <<-EOE
+                BEGIN { # First in first out. Get this one exec'ed before the code below.
                   Object.class_eval do
                     remove_const :OrigDir rescue nil
                     OrigDir = Dir
                     remove_const :Dir
                     Dir = LazyDir
                   end
-                  params = tmpdir = data = spec = repo = nil
                   $SAFE = 3
                   OrigDir.set_safe_level
-
-                  #{data}
-                ensure
-                  Object.class_eval do
-                    remove_const :Dir
-                    Dir = OrigDir
+                }
+                BEGIN { # This forces Ruby to ignore nested END {} blocks
+                  begin
+                    params = tmpdir = data = spec = repo = nil
+                    # Pass data out using TLS
+                    Thread.current[:spec] = (#{data})
+                  ensure
+                    Object.class_eval do
+                      remove_const :Dir
+                      Dir = OrigDir
+                    end
                   end
-                end
+                }
               EOE
             end.join
             Dir.set_safe_level
-
+            spec = thread[:spec]
             spec.rubygems_version = Gem::RubyGemsVersion # make sure validation passes
             spec.validate
           end
